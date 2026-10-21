@@ -99,22 +99,58 @@ The explicit goal is that the value extracted from a document outlives the origi
 
 ```mermaid
 flowchart TD
-    A["User uploads PDF"] --> B["Go Upload API"]
-    B --> C["Validate & store original"]
-    C --> D["Create durable processing job"]
-    D --> E["Background worker"]
-    E --> F["Extract document structure"]
-    F --> G["PageIndex integration"]
-    F --> H["Extract & persist content"]
-    G --> I["Persist document tree"]
-    H --> J["Structured data extraction"]
-    I --> K["Knowledge persistence"]
+    %% ── Styles ──────────────────────────────────────
+    classDef user     fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e
+    classDef api      fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d
+    classDef worker   fill:#fefce8,stroke:#ca8a04,stroke-width:2px,color:#713f12
+    classDef storage  fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px,color:#4c1d95
+    classDef ai       fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#9a3412
+    classDef ready    fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b
+
+    %% ── Flow ────────────────────────────────────────
+    A["User uploads PDF"]:::user
+
+    subgraph Ingestion["1. Ingestion"]
+        B["Go Upload API"]:::api
+        C["Validate & store original"]:::storage
+        D["Create durable processing job"]:::api
+    end
+
+    subgraph Extraction["2. Knowledge Extraction"]
+        E["Background worker"]:::worker
+        F["Extract document structure"]:::worker
+        G["PageIndex integration"]:::worker
+        H["Extract & persist content"]:::storage
+        I["Persist document tree"]:::storage
+        J["Structured data extraction"]:::worker
+        K["Knowledge persistence"]:::storage
+    end
+
+    subgraph Insights["3. Insight Generation"]
+        L["Generate default insights"]:::ai
+        M["Evaluate registered questions"]:::ai
+        N["Persist analytical results"]:::storage
+    end
+
+    O["Document ready for exploration"]:::ready
+
+    %% ── Connections ─────────────────────────────────
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    F --> H
+    G --> I
+    H --> J
+    I --> K
     J --> K
-    K --> L["Generate default insights"]
-    K --> M["Evaluate registered questions"]
-    L --> N["Persist analytical results"]
+    K --> L
+    K --> M
+    L --> N
     M --> N
-    N --> O["Document ready for exploration"]
+    N --> O
 ```
 
 Key design points:
