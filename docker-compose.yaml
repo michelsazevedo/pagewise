@@ -1,0 +1,61 @@
+services:
+  test: &base
+    build:
+      context: ./
+      target: dev
+    image: pagewise-test
+    command: go test -v ./...
+    volumes:
+      - .:/go/src/github.com/michelsazevedo/pagewise/
+      - go_build_cache:/root/.cache/go-build
+    depends_on:
+      - db
+      - jaeger
+    stdin_open: true
+    tty: true
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-pagewise}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pagewisepwd}
+      - POSTGRES_DB=${POSTGRES_DB:-pagewise}
+      - POSTGRES_HOST=${POSTGRES_HOST:-db:5432}
+      - ENV_APP=${ENV_APP:-development}
+      - OTLP_ENDPOINT=${OTLP_ENDPOINT:-jaeger:4318}
+
+  web:
+    <<: *base
+    image: pagewise_web
+    command: go run cmd/main.go
+    ports:
+      - "8080:8080"
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-pagewise}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pagewisepwd}
+      - POSTGRES_DB=${POSTGRES_DB:-pagewise}
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    restart: unless-stopped
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  db_data:
+  go_build_cache:
